@@ -1,0 +1,187 @@
+{
+  "name": "Production AI Agent Monitoring",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 15
+            }
+          ]
+        }
+      },
+      "id": "a1000000-0000-4000-8000-000000000001",
+      "name": "Every 15 Minutes",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        0,
+        96
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.MONITOR_TARGET_URL || 'https://mohammad-shaheed.app.n8n.cloud/healthz' }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true
+            }
+          },
+          "timeout": 10000
+        }
+      },
+      "id": "a1000000-0000-4000-8000-000000000002",
+      "name": "Health Check Request",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        224,
+        96
+      ],
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "h1",
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              },
+              "leftValue": "={{ $json.statusCode ?? 0 }}",
+              "rightValue": 200
+            },
+            {
+              "id": "h2",
+              "operator": {
+                "type": "number",
+                "operation": "lt"
+              },
+              "leftValue": "={{ $json.statusCode ?? 0 }}",
+              "rightValue": 400
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "a1000000-0000-4000-8000-000000000003",
+      "name": "Is Healthy?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        448,
+        96
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "a1000000-0000-4000-8000-000000000004",
+      "name": "Healthy - No Alert",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        672,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "={{ $env.SLACK_ALERT_CHANNEL || '#alerts' }}"
+        },
+        "text": "=:rotating_light: *Production AI Agent — Health Check FAILED*\n\nTarget: {{ $env.MONITOR_TARGET_URL || 'https://mohammad-shaheed.app.n8n.cloud/healthz' }}\nHTTP status: {{ $('Health Check Request').first().json.statusCode ?? 'no response' }}\nChecked at: {{ $now.toISO() }}\nWorkflow execution: {{ $execution.id }}\n\nThe production AI Agent endpoint did not return a healthy (2xx/3xx) response. Please investigate.",
+        "otherOptions": {
+          "includeLinkToWorkflow": true
+        }
+      },
+      "id": "a1000000-0000-4000-8000-000000000005",
+      "name": "Slack Alert",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.7,
+      "position": [
+        672,
+        192
+      ],
+      "webhookId": "1cfb0fd8-954c-47d2-8fb8-d1b09de6767b",
+      "credentials": {
+        "slackApi": {
+          "id": "VQqWZVPddBQOwiSw",
+          "name": "Slack account 2"
+        }
+      },
+      "onError": "continueRegularOutput"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Every 15 Minutes": {
+      "main": [
+        [
+          {
+            "node": "Health Check Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Health Check Request": {
+      "main": [
+        [
+          {
+            "node": "Is Healthy?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Healthy?": {
+      "main": [
+        [
+          {
+            "node": "Healthy - No Alert",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Slack Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "c7a5b556-5426-4c08-83f2-d4b80038f366",
+  "meta": {
+    "instanceId": "6abe9931809978352319cb21622ffdff38accce530bfc6c488633e9f18461d78"
+  },
+  "nodeGroups": [],
+  "id": "SYuFAXb4bCqMcF6d",
+  "tags": []
+}
