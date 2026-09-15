@@ -1,11 +1,23 @@
 # Production AI Agent Monitoring
 
-Workflow ID: SYuFAXb4bCqMcF6d
+Workflow ID: `SYuFAXb4bCqMcF6d`
 
-Flow: Schedule Trigger every 15 minutes → HTTP Request → IF → Healthy/No Alert or Slack Alert.
+## Flow
 
-Healthy means HTTP status 200–399. Any non-success response or request failure routes to Slack Alert.
+`Every 15 Minutes → Health Check Request → Is Healthy? → Healthy - No Alert / Slack Alert`
 
-The workflow uses $env.MONITOR_TARGET_URL and $env.SLACK_ALERT_CHANNEL. Slack credentials remain in n8n credentials.
+The health request uses a 10-second timeout and accepts HTTP 2xx/3xx as healthy. Request failures and non-success status codes route to the alert branch.
 
-Sandbox validation verified unhealthy routing, but Slack delivery was simulated. A live health endpoint and Slack credential are required for live validation.
+## Cloud-safe configuration
+
+The workflow uses `$vars.MONITOR_TARGET_URL || 'https://mohammad-shaheed.app.n8n.cloud/healthz'` and `$vars.SLACK_ALERT_CHANNEL || '#alerts'`.
+
+This avoids the managed-Cloud `$env` access restriction encountered during testing while keeping configuration external to the workflow logic.
+
+## Alert payload
+
+The Slack alert includes the target URL, HTTP status (or no response), timestamp, and n8n execution ID, plus an investigation instruction.
+
+## Verification
+
+Healthy monitoring was verified with HTTP 200 and `status: ok`, reaching `Healthy - No Alert`. The failure route was exercised during development; real Slack delivery requires the configured Slack credential and channel access.
