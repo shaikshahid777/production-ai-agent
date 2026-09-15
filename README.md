@@ -1,19 +1,44 @@
-# Production AI Agent — Topic 12
+# Production AI Agent — LMS Topic 11
 
-Production deployment, monitoring, security hardening, and version-control package for the n8n Autonomous Support & Lead Generation Agent.
+## Autonomous Support & Lead Generation Agent + Production Monitoring
 
-## AI model
-Google Gemini 2.5 Flash only. No OpenAI dependency.
+A production-oriented n8n automation package combining an AI-assisted support/lead workflow with scheduled production health monitoring.
 
-## Workflows
-- workflows/production-ai-agent.json — main support and lead-generation agent.
-- workflows/monitoring-workflow.json — Schedule (15 min) → HTTP health check → IF → Slack alert.
+### Architecture
 
-## Production hardening
-- Environment-specific values use n8n $env references.
-- Secrets remain in n8n credentials and are not committed.
-- Input validation, structured AI output parsing, fallback/error handling, and parameterized SQL are used.
-- Execution pruning and monitoring are documented as instance/environment configuration.
+**Main workflow**  
+Support Webhook → Input Validation → Input Normalization → Customer/Ticket/Account Context → Context Merge → AI Support Agent (Google Gemini 2.5 Flash) → Structured Output Parse & Validate → Decision Routing → Customer/Internal Notifications → Token Usage Logging → Webhook Response.
 
-## Honest verification scope
-Sandbox verification covered workflow structure and simulated external actions. Real Gemini/Slack/Postgres/SMTP delivery, live health endpoint, server-level pruning, screenshots, and demo video require the operator environment.
+**Monitoring workflow**  
+Schedule (every 15 minutes) → Health Check → Health Decision → Healthy / No Alert OR Slack Alert.
+
+### Engineering practices
+
+- Google Gemini 2.5 Flash; no OpenAI dependency.
+- Required-field validation with an explicit validation-error response.
+- PostgreSQL queries use parameter replacement rather than string concatenation.
+- Structured AI output parsing with fallback/error handling.
+- Non-secret runtime configuration uses n8n Variables (`$vars`) with safe defaults.
+- Credentials remain in n8n credential storage and are not committed to Git.
+- Monitoring includes timeout handling, non-success routing, execution ID, timestamp, target, and HTTP status in alerts.
+- Execution retention/pruning is documented as instance-level configuration.
+- Security review covers webhook authentication, rate limiting, PII minimization, least-privilege DB access, and secret rotation.
+
+### Repository layout
+
+- `workflows/` — importable n8n workflow JSON exports
+- `docs/` — deployment, security, monitoring, retention, version-control and demo documentation
+- `screenshots/` — captured execution/evidence screenshots
+- `Topic_12_Production_Deployment_Documentation.pdf` — consolidated documentation package
+
+### Verification status
+
+The repository contains the workflow exports and implementation documentation. The healthy monitoring path was verified with HTTP 200/status `ok`; validation and routing paths were tested. Real external delivery depends on credentials and services configured in the target environment.
+
+### Demo
+
+Loom: https://www.loom.com/share/9251611ad7e947b3a6b88415de58adfd
+
+### Repository
+
+Public repository: https://github.com/shaikshahid777/production-ai-agent
